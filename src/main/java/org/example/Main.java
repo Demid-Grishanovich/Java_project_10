@@ -1,14 +1,10 @@
 package org.example;
 
 import java.sql.DriverManager;
-import java.sql.Connection;
-import java.sql.Statement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.MissingResourceException;
-import java.util.ResourceBundle;
+
 
 public class Main {
     private static final DbSettings SETTINGS = new DbSettings();
