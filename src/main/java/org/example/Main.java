@@ -1,14 +1,10 @@
 package org.example;
 
 import java.sql.DriverManager;
-import java.sql.Connection;
-import java.sql.Statement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.MissingResourceException;
-import java.util.ResourceBundle;
+
 
 public class Main {
     private static final DbSettings SETTINGS = new DbSettings();
@@ -18,10 +14,12 @@ public class Main {
     private static final String COORDINATES_TABLE = "Coordinates";
     private static final String FREQUENCIES_TABLE = "Frequencies";
     private static final String CREATE_TABLE = "CREATE TABLE %s ( id INTEGER AUTO_INCREMENT PRIMARY KEY, len INT, num INT );";
-    private static final String INSERT_INTO = "INSERT INTO %s (len, num) VALUES (%d, %d)";
+    private static final String INSERT_INTO = "INSERT INTO %s (len, num) VALUES (?, ?)";
     private static final String SELECT_FROM_WHERE_LEN_BIGGER_THAN_NUM = "SELECT * FROM %s WHERE len>num";
 
     private static final String SEPARATOR = ":";
+    private static final int LEN_IDX = 1;
+    private static final int NUM_IDX = 2;
 
     public static void main(String[] args) {
         class Pair {
@@ -67,26 +65,22 @@ public class Main {
                         }
                     }
 
-                    frequencies.sort(new Comparator<Pair>() {
-                        @Override
-                        public int compare(Pair o1, Pair o2) {
-                            return Integer.compare(o1.len, o2.len);
-                        }
-                    });
+                    frequencies.sort(Comparator.comparingInt(o -> o.len));
 
                     st.execute(String.format(DROP_TABLE, FREQUENCIES_TABLE));
                     st.execute(String.format(CREATE_TABLE, FREQUENCIES_TABLE));
 
+                    final var statement = cn.prepareStatement(String.format(INSERT_INTO, FREQUENCIES_TABLE));
                     for (final var freq : frequencies) {
                         System.out.println(freq.len + ":" + freq.num);
 
-                        st.execute(String.format(
-                                INSERT_INTO,
-                                FREQUENCIES_TABLE,
-                                freq.len,
-                                freq.num
-                        ));
+                        statement.setInt(LEN_IDX, freq.len);
+                        statement.setInt(NUM_IDX, freq.num);
+
+                        statement.addBatch();
                     }
+
+                    statement.executeBatch();
                 }
 
                 try (final var rs = st.executeQuery(String.format(SELECT_FROM_WHERE_LEN_BIGGER_THAN_NUM, FREQUENCIES_TABLE))) {
